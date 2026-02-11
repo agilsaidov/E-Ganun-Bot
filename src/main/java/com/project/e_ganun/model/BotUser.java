@@ -30,15 +30,20 @@ public class BotUser {
     @Column(name = "is_bot")
     private Boolean isBot;
 
+    @Column(name = "is_active")
+    private Boolean isActive;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
-    @Column(name = "is_active")
-    private Boolean isActive;
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
 
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
         if (isActive == null) {
             isActive = true;
         }

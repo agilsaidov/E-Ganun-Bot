@@ -1,7 +1,7 @@
 package com.project.e_ganun.bot;
 
 import com.project.e_ganun.config.BotConfig;
-import com.project.e_ganun.model.Ganun;
+import com.project.e_ganun.model.Law;
 import com.project.e_ganun.service.BotUserService;
 import com.project.e_ganun.service.GanunService;
 import lombok.RequiredArgsConstructor;
@@ -97,7 +97,7 @@ public class GanunBot extends TelegramLongPollingBot {
 
 
     private void searchGanun(Long chatId, String ganunNo) {
-        List<Ganun> results = ganunService.searchByGanunNo(ganunNo);
+        List<Law> results = ganunService.searchByGanunNo(ganunNo);
 
         if (results.isEmpty()) {
             sendMessage(chatId, "❌ Qanun tapılmadı");
@@ -108,13 +108,13 @@ public class GanunBot extends TelegramLongPollingBot {
         sendMessage(chatId, response);
     }
 
-    private String formatResults(List<Ganun> ganuns) {
+    private String formatResults(List<Law> laws) {
         StringBuilder sb = new StringBuilder();
         sb.append("\uD83D\uDCDC Tapılan qanunlar:\n\n");
 
-        for (Ganun ganun : ganuns) {
-            sb.append("🔹 Maddə ").append(ganun.getGanunNo()).append("\n\n");
-            sb.append(ganun.getGanunText()).append("\n");
+        for (Law law : laws) {
+            sb.append("🔹 Maddə ").append(law.getLawNo()).append("\n\n");
+            sb.append(law.getLawText()).append("\n");
             sb.append("─────────────────\n\n");
         }
         return sb.toString();

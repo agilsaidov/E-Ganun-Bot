@@ -1,7 +1,7 @@
 package com.project.e_ganun.service;
 
-import com.project.e_ganun.model.Ganun;
-import com.project.e_ganun.repository.GanunRepo;
+import com.project.e_ganun.model.Law;
+import com.project.e_ganun.repository.LawRepo;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,13 +15,13 @@ import java.util.Optional;
 @Data
 public class GanunService {
 
-    private final GanunRepo ganunRepo;
+    private final LawRepo lawRepo;
 
-    public List<Ganun> searchByGanunNo(String ganunNo) {
-        return ganunRepo.findByGanunNoStartingWith(ganunNo);
+    public List<Law> searchByGanunNo(String ganunNo) {
+        return lawRepo.findByGanunNoStartingWith(ganunNo);
     }
 
-    public Optional<Ganun> getExactGanun(String ganunNo) {
-        return ganunRepo.findByExactGanunNo(ganunNo);
+    public Optional<Law> getExactGanun(String ganunNo) {
+        return lawRepo.findByExactGanunNo(ganunNo);
     }
 }

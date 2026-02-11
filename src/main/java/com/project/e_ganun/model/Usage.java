@@ -28,6 +28,9 @@ public class Usage {
     @Column(name = "last_search_query")
     private String lastSearchQuery;
 
+    @Column(name = "last_search_code")
+    private String lastSearchCode;
+
     @Column(name = "total_messages")
     private Integer totalMessages;
 
