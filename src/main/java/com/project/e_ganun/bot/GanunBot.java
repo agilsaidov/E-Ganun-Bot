@@ -47,7 +47,7 @@ public class GanunBot extends TelegramLongPollingBot {
                     sendWelcomeMessage(chatId);
                     botUserService.registerOrUpdateUser(user);
                     break;
-                case "/haqqinda":
+                case "/haqqinda", "/haqqında", "/about":
                     sendAboutMessage(chatId);
                     break;
                 case "/stats":
@@ -62,24 +62,47 @@ public class GanunBot extends TelegramLongPollingBot {
                                     "\n\uD83D\uDFE2 Aktiv Məcəlləniz: " + codeType.getDisplayName());
                             break;
                         }
-                        sendMessage(chatId, "⚠️ Sizin seçilmiş məcəlləniz yoxdur\n" +
-                                "ℹ️ Məcəllə seçmək üçün:\n" + CODE_SELECTION_TEXT + "\nəmirlərindən birini cağırın");
+                        sendMessage(chatId, "ℹ️ Məcəllə seçmək üçün:\n" + CODE_SELECTION_TEXT + "\nəmirlərindən birini cağırın");
                         break;
                     }catch (RuntimeException e){
                         sendMessage(chatId, NOT_REGISTERED_MESSAGE);
+                        break;
                     }
 
                 case "/cm","/ixm":
                     try {
                         Usage usage = botUserService.changeCode(user.getId(), messageText);
-                        sendMessage(chatId, "ℹ️ Aktiv məcəllə dəyişdi\n" +
-                                "\uD83D\uDFE2 Yeni Məcəllə: " + usage.getLastSearchCode().getDisplayName());
+                        sendMessage(chatId, "ℹ️ Seçili məcəllə dəyişdi\n" +
+                                "\uD83D\uDFE2 Aktiv Məcəllə: " + usage.getLastSearchCode().getDisplayName());
                         break;
                     }catch(RuntimeException e) {
                         sendMessage(chatId, NOT_REGISTERED_MESSAGE);
+                        break;
+                    }
+                case "/temizle", "/təmizlə":
+                    try{
+                        botUserService.resetCode(user.getId());
+                        sendMessage(chatId, "ℹ️ Seçili məcəllə silindi");
+                        break;
+                    }catch (RuntimeException e){
+                        sendMessage(chatId, NOT_REGISTERED_MESSAGE);
+                        break;
                     }
 
                 default:
+                    if (messageText.trim().isEmpty()) {
+                        return;
+                    }
+
+                    if (messageText.length() > 100) {
+                        sendMessage(chatId, "❌ Sorğu çox uzundur");
+                        return;
+                    }
+
+                    if (!messageText.matches("[a-zA-Z0-9.\\-]+")) {
+                        sendMessage(chatId, "❌ Yalnız rəqəm və hərflərdən istifadə edin");
+                        return;
+                    }
                     try {
                         Usage botUsage = botUserService.trackSearch(user.getId(), messageText);
                         if (botUsage.getLastSearchCode() == null) {
@@ -91,6 +114,7 @@ public class GanunBot extends TelegramLongPollingBot {
                         break;
                     }catch (RuntimeException e) {
                         sendMessage(chatId, NOT_REGISTERED_MESSAGE);
+                        break;
                     }
             }
         }
@@ -111,7 +135,9 @@ public class GanunBot extends TelegramLongPollingBot {
 
     private void sendWelcomeMessage(Long chatId) {
         String welcome = "🇦🇿 E-Ganun botuna xoş gəlmisiniz!\n" +
+                "\uD83D\uDCEC Məcəllə seçmək və ya məlumat almaq üçün /mecelle\n" +
                 "\uD83D\uDCDC Maddələr üçün nömrə daxil edin (məs: 241)\n" +
+                "ℹ️ Seçili məcəlləni silmək üçün /temizle\n" +
                 "📊 Statistikanız üçün /stats\n" +
                 "❓ Bot haqqında məlumat /haqqinda";
         sendMessage(chatId, welcome);

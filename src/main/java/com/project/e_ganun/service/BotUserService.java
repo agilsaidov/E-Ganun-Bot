@@ -57,21 +57,20 @@ public class BotUserService {
     }
 
     @Transactional
-    public void trackMessage(Long telegramId){
-        Usage usage = usageRepo.findByTelegramId(telegramId)
-                .orElseThrow(() -> new RuntimeException("Usage record not found"));
-
-        usage.setTotalMessages(usage.getTotalMessages() + 1);
-        usageRepo.save(usage);
-    }
-
-    @Transactional
     public Usage changeCode(Long telegramId, String newCode){
         Usage usage = usageRepo.findByTelegramId(telegramId)
                 .orElseThrow(() -> new RuntimeException("Usage record not found"));
 
         usage.setLastSearchCode(convertToCodeType(newCode));
         return usageRepo.save(usage);
+    }
+
+    public void resetCode(Long telegramId){
+        Usage usage = usageRepo.findByTelegramId(telegramId)
+                .orElseThrow(() -> new RuntimeException("Usage record not found"));
+
+        usage.setLastSearchCode(null);
+        usageRepo.save(usage);
     }
 
     public Usage getUserUsage(Long telegramId){
