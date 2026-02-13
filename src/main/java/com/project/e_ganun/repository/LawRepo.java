@@ -12,11 +12,7 @@ import java.util.Optional;
 @Repository
 public interface LawRepo extends CrudRepository<Law, String> {
 
-    @Query(value = "SELECT * FROM ganun.law WHERE law_no LIKE :lawNo || '.%'",
+    @Query(value = "SELECT * FROM ganun.law WHERE code_type = :codeType AND (law_no LIKE :lawNo || '.%') ORDER BY law_no",
             nativeQuery = true)
-    List<Law> findByGanunNoStartingWith(@Param("lawNo") String lawNo);
-
-    @Query(value = "SELECT * FROM ganun.law WHERE ganun_no = :lawNo",
-            nativeQuery = true)
-    Optional<Law> findByExactGanunNo(@Param("lawNo") String lawNo);
+    List<Law> findByLawNoAndCodeType(@Param("lawNo") String lawNo, @Param("codeType") String codeType);
 }

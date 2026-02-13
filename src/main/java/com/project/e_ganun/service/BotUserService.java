@@ -1,6 +1,7 @@
 package com.project.e_ganun.service;
 
 import com.project.e_ganun.model.BotUser;
+import com.project.e_ganun.model.CodeType;
 import com.project.e_ganun.model.Usage;
 import com.project.e_ganun.repository.BotUserRepo;
 import com.project.e_ganun.repository.UsageRepo;
@@ -19,7 +20,7 @@ public class BotUserService {
     private final UsageRepo usageRepo;
 
     @Transactional
-    public void registerOrUpdateUSer(User telegramUser){
+    public void registerOrUpdateUser(User telegramUser){
         Long telegramId = telegramUser.getId();
 
         BotUser user = botUserRepo.findByTelegramId(telegramId)
@@ -44,7 +45,7 @@ public class BotUserService {
     }
 
     @Transactional
-    public void trackSearch(Long telegramId, String query){
+    public Usage trackSearch(Long telegramId, String query){
         Usage usage = usageRepo.findByTelegramId(telegramId)
                 .orElseThrow(() -> new RuntimeException("Usage record not found"));
 
@@ -52,7 +53,7 @@ public class BotUserService {
         usage.setLastSearchDate(LocalDateTime.now());
         usage.setLastSearchQuery(query);
 
-        usageRepo.save(usage);
+        return usageRepo.save(usage);
     }
 
     @Transactional
@@ -64,8 +65,32 @@ public class BotUserService {
         usageRepo.save(usage);
     }
 
+    @Transactional
+    public Usage changeCode(Long telegramId, String newCode){
+        Usage usage = usageRepo.findByTelegramId(telegramId)
+                .orElseThrow(() -> new RuntimeException("Usage record not found"));
+
+        usage.setLastSearchCode(convertToCodeType(newCode));
+        return usageRepo.save(usage);
+    }
+
     public Usage getUserUsage(Long telegramId){
         return usageRepo.findByTelegramId(telegramId)
                 .orElse(null);
+    }
+
+    public CodeType convertToCodeType(String message){
+        return switch (message) {
+            case "/ixm" -> CodeType.INZIBATI_XETALAR;
+            case "/cm" -> CodeType.CINAYET;
+            default -> throw new IllegalArgumentException("Invalid code: " + message);
+        };
+    }
+
+    public CodeType getCodeType(Long telegramId){
+        Usage usage = usageRepo.findByTelegramId(telegramId)
+                .orElseThrow(() -> new RuntimeException("Usage record not found"));
+
+        return usage.getLastSearchCode();
     }
 }

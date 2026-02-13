@@ -1,9 +1,12 @@
 package com.project.e_ganun.bot;
 
 import com.project.e_ganun.config.BotConfig;
+import com.project.e_ganun.model.CodeType;
 import com.project.e_ganun.model.Law;
+import com.project.e_ganun.model.LawId;
+import com.project.e_ganun.model.Usage;
 import com.project.e_ganun.service.BotUserService;
-import com.project.e_ganun.service.GanunService;
+import com.project.e_ganun.service.LawService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
@@ -21,7 +24,7 @@ import java.util.List;
 public class GanunBot extends TelegramLongPollingBot {
 
     private final BotConfig botConfig;
-    private final GanunService ganunService;
+    private final LawService ganunService;
     private final BotUserService botUserService;
 
     @Override
@@ -31,19 +34,46 @@ public class GanunBot extends TelegramLongPollingBot {
             Long chatId = update.getMessage().getChatId();
             User user = update.getMessage().getFrom();
 
-            if(messageText.equals("/start")){
-                sendWelcomeMessage(chatId);
-                botUserService.registerOrUpdateUSer(user);
-            }
-            else if(messageText.equals("/haqqında") || messageText.equals("/haqqinda") || messageText.equals("/about")){
-                sendAboutMessage(chatId);
-            }
-            else if(messageText.equals("/stats")){
-                sendUserStats(chatId, user.getId());
-            }
-            else{
-                botUserService.trackSearch(user.getId(), messageText);
-                searchGanun(chatId, messageText);
+            String codeText = "/cm -> Cinayət Məcəlləsi\n" +
+                              "/ixm -> İnzibati Xətalar Məcəlləsi";
+
+            switch (messageText) {
+                case "/start":
+                    sendWelcomeMessage(chatId);
+                    botUserService.registerOrUpdateUser(user);
+                    break;
+                case "/haqqinda":
+                    sendAboutMessage(chatId);
+                    break;
+                case "/stats":
+                    sendUserStats(chatId, user.getId());
+                    break;
+
+                case "/mecelle", "/məcəllə":
+                    CodeType codeType = botUserService.getCodeType(user.getId());
+                    if(codeType != null) {
+                        sendMessage(chatId, "Aktiv Məcəllə: " + codeType.getDisplayName());
+                        return;
+                    }
+                    sendMessage(chatId, "\uFE0F Sizin seçilmiş məcəlləniz yoxdur\n" +
+                            "\uFE0F Məcəllə seçmək üçün\n" + codeText + "\n əmirlirindən birini cağırın");
+                    break;
+
+                case "/cm","/ixm":
+                    Usage usage = botUserService.changeCode(user.getId(), messageText);
+                    sendMessage(chatId,"\uFE0F Aktiv məcəllə dəyişdi\n" +
+                            "\uD83D\uDFE2 Yeni Məcəllə: " + usage.getLastSearchCode().getDisplayName());
+                    break;
+
+                default:
+                    Usage botUsage = botUserService.trackSearch(user.getId(), messageText);
+                    if (botUsage.getLastSearchCode() == null) {
+                        sendMessage(chatId, "⚠️ Zəhmət olmasa əvvəl məcəllə seçin:\n" + codeText);
+                        return;
+                    }
+                    LawId lawId = new LawId(messageText, botUsage.getLastSearchCode());
+                    searchGanun(chatId, lawId);
+                    break;
             }
         }
 
@@ -96,8 +126,9 @@ public class GanunBot extends TelegramLongPollingBot {
     }
 
 
-    private void searchGanun(Long chatId, String ganunNo) {
-        List<Law> results = ganunService.searchByGanunNo(ganunNo);
+    private void searchGanun(Long chatId, LawId lawId) {
+
+        List<Law> results = ganunService.searchByLawId(lawId);
 
         if (results.isEmpty()) {
             sendMessage(chatId, "❌ Qanun tapılmadı");

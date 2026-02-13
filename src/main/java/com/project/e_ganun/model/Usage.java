@@ -29,7 +29,7 @@ public class Usage {
     private String lastSearchQuery;
 
     @Column(name = "last_search_code")
-    private String lastSearchCode;
+    private CodeType lastSearchCode;
 
     @Column(name = "total_messages")
     private Integer totalMessages;
