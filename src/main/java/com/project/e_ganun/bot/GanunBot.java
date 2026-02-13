@@ -8,6 +8,7 @@ import com.project.e_ganun.model.Usage;
 import com.project.e_ganun.service.BotUserService;
 import com.project.e_ganun.service.LawService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
@@ -21,21 +22,25 @@ import java.util.List;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class GanunBot extends TelegramLongPollingBot {
 
     private final BotConfig botConfig;
     private final LawService ganunService;
     private final BotUserService botUserService;
 
+    private static final String CODE_SELECTION_TEXT = "/cm -> Cinayət Məcəlləsi\n" +
+                                                      "/ixm -> İnzibati Xətalar Məcəlləsi";
+    private static final String NOT_REGISTERED_MESSAGE = "❌ Siz qeydiyyatdan keçməmisiniz.\n" +
+                                                         "⚠️ Qeydiyyat üçün /start əmrini çağırın";
+
     @Override
     public void onUpdateReceived(Update update) {
+
         if(update.hasMessage() && update.getMessage().hasText()) {
             String messageText = update.getMessage().getText();
             Long chatId = update.getMessage().getChatId();
             User user = update.getMessage().getFrom();
-
-            String codeText = "/cm -> Cinayət Məcəlləsi\n" +
-                              "/ixm -> İnzibati Xətalar Məcəlləsi";
 
             switch (messageText) {
                 case "/start":
@@ -50,30 +55,43 @@ public class GanunBot extends TelegramLongPollingBot {
                     break;
 
                 case "/mecelle", "/məcəllə":
-                    CodeType codeType = botUserService.getCodeType(user.getId());
-                    if(codeType != null) {
-                        sendMessage(chatId, "Aktiv Məcəllə: " + codeType.getDisplayName());
-                        return;
+                    try {
+                        CodeType codeType = botUserService.getCodeType(user.getId());
+                        if (codeType != null) {
+                            sendMessage(chatId, "ℹ️ Mövcud məcəllələr: \n" + CODE_SELECTION_TEXT +
+                                    "\n\uD83D\uDFE2 Aktiv Məcəlləniz: " + codeType.getDisplayName());
+                            break;
+                        }
+                        sendMessage(chatId, "⚠️ Sizin seçilmiş məcəlləniz yoxdur\n" +
+                                "ℹ️ Məcəllə seçmək üçün:\n" + CODE_SELECTION_TEXT + "\nəmirlərindən birini cağırın");
+                        break;
+                    }catch (RuntimeException e){
+                        sendMessage(chatId, NOT_REGISTERED_MESSAGE);
                     }
-                    sendMessage(chatId, "\uFE0F Sizin seçilmiş məcəlləniz yoxdur\n" +
-                            "\uFE0F Məcəllə seçmək üçün\n" + codeText + "\n əmirlirindən birini cağırın");
-                    break;
 
                 case "/cm","/ixm":
-                    Usage usage = botUserService.changeCode(user.getId(), messageText);
-                    sendMessage(chatId,"\uFE0F Aktiv məcəllə dəyişdi\n" +
-                            "\uD83D\uDFE2 Yeni Məcəllə: " + usage.getLastSearchCode().getDisplayName());
-                    break;
+                    try {
+                        Usage usage = botUserService.changeCode(user.getId(), messageText);
+                        sendMessage(chatId, "ℹ️ Aktiv məcəllə dəyişdi\n" +
+                                "\uD83D\uDFE2 Yeni Məcəllə: " + usage.getLastSearchCode().getDisplayName());
+                        break;
+                    }catch(RuntimeException e) {
+                        sendMessage(chatId, NOT_REGISTERED_MESSAGE);
+                    }
 
                 default:
-                    Usage botUsage = botUserService.trackSearch(user.getId(), messageText);
-                    if (botUsage.getLastSearchCode() == null) {
-                        sendMessage(chatId, "⚠️ Zəhmət olmasa əvvəl məcəllə seçin:\n" + codeText);
-                        return;
+                    try {
+                        Usage botUsage = botUserService.trackSearch(user.getId(), messageText);
+                        if (botUsage.getLastSearchCode() == null) {
+                            sendMessage(chatId, "⚠️ Zəhmət olmasa əvvəl məcəllə seçin:\n" + CODE_SELECTION_TEXT);
+                            break;
+                        }
+                        LawId lawId = new LawId(messageText, botUsage.getLastSearchCode());
+                        searchGanun(chatId, lawId);
+                        break;
+                    }catch (RuntimeException e) {
+                        sendMessage(chatId, NOT_REGISTERED_MESSAGE);
                     }
-                    LawId lawId = new LawId(messageText, botUsage.getLastSearchCode());
-                    searchGanun(chatId, lawId);
-                    break;
             }
         }
 
@@ -81,7 +99,7 @@ public class GanunBot extends TelegramLongPollingBot {
 
     @Override
     public String getBotUsername() {
-        return botConfig.getToken();
+        return botConfig.getUsername();
     }
 
     @Override
@@ -118,7 +136,7 @@ public class GanunBot extends TelegramLongPollingBot {
 
     private void sendAboutMessage(Long chatId) {
         String about =
-                "ℹ️ *E-Ganun Botu*\n\n" +
+                "\uD83E\uDD16 *E-Ganun Botu*\n\n" +
                         "E-Ganun botu Azərbaycan Respublikası qanunvericiliyinə dair məlumatları rəsmi mənbələr əsasında təqdim etmək məqsədilə hazırlanmış köməkçi botdur.\n\n" +
                         "❗ *Qeyd:*\n" +
                         "Bot rəsmi hüquqi mənbə hesab edilmir. Məlumatlar əsasən rəsmi mənbələrə söykənsə də, mümkün texniki vəya məzmun xətalarına görə bot və onun yaradıcısı heç bir məsuliyyət daşımır.";
@@ -159,8 +177,7 @@ public class GanunBot extends TelegramLongPollingBot {
         try {
             execute(sendMessage);
         }catch (TelegramApiException e){
-            sendMessage(chatId, "❌ Xəta");
-            e.printStackTrace();
+            log.error("Failed to send message to chatId {}: {}", chatId, e.getMessage());
         }
     }
 
