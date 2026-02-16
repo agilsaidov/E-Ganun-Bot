@@ -1,8 +1,12 @@
 package com.project.e_ganun.model;
 
+import lombok.Getter;
+
+@Getter
 public enum CodeType {
     INZIBATI_XETALAR("İnzibati Xətalar Məcəlləsi"),
-    CINAYET("Cinayət Məcəlləsi");
+    CINAYET("Cinayət Məcəlləsi"),
+    KONSTITUSIYA("Azərbaycan Respublikası Konstitusiyası");
 
     private final String displayName;
 
@@ -10,7 +14,4 @@ public enum CodeType {
         this.displayName = displayName;
     }
 
-    public String getDisplayName() {
-        return displayName;
-    }
 }

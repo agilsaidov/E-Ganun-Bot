@@ -30,7 +30,8 @@ public class GanunBot extends TelegramLongPollingBot {
     private final BotUserService botUserService;
 
     private static final String CODE_SELECTION_TEXT = "/cm -> Cinayət Məcəlləsi\n" +
-                                                      "/ixm -> İnzibati Xətalar Məcəlləsi";
+                                                      "/ixm -> İnzibati Xətalar Məcəlləsi\n" +
+                                                      "/ark -> Azərbaycan Respublikası Konstitusiyası";
     private static final String NOT_REGISTERED_MESSAGE = "❌ Siz qeydiyyatdan keçməmisiniz.\n" +
                                                          "⚠️ Qeydiyyat üçün /start əmrini çağırın";
 
@@ -69,7 +70,7 @@ public class GanunBot extends TelegramLongPollingBot {
                         break;
                     }
 
-                case "/cm","/ixm":
+                case "/cm","/ixm","/ark":
                     try {
                         Usage usage = botUserService.changeCode(user.getId(), messageText);
                         sendMessage(chatId, "ℹ️ Seçili məcəllə dəyişdi\n" +

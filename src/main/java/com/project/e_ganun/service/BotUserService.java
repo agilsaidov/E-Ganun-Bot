@@ -82,6 +82,7 @@ public class BotUserService {
         return switch (message) {
             case "/ixm" -> CodeType.INZIBATI_XETALAR;
             case "/cm" -> CodeType.CINAYET;
+            case "/ark" -> CodeType.KONSTITUSIYA;
             default -> throw new IllegalArgumentException("Invalid code: " + message);
         };
     }
